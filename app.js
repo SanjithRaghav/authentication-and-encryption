@@ -4,6 +4,8 @@ const bodyParser= require('body-parser');
 const app= express();
 const ejs= require('ejs');
 const mongoose=require('mongoose');
+const encrypt=require('mongoose-encryption')
+
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static('public'));
@@ -16,6 +18,11 @@ const userSchema=new mongoose.Schema({
     email:String, 
     password:String
 })
+
+var secret = "abcdefghijklmnopqrstuvwxyz"
+
+
+userSchema.plugin(encrypt, { secret: secret,encryptedFields: ['password']});
 
 const user=mongoose.model('User',userSchema);
 
@@ -31,12 +38,18 @@ app.get('/login',(req, res)=>{
     res.render('login',{});
 })
 app.post('/register',(req, res)=>{
-    var data={
+    var data=new user({
         email:req.body.username,
         password:req.body.password
-    }
-    user.insertMany(data);
-    res.render('secrets',{});
+    })
+    data.save((err)=>{
+        if(err){
+            console.log('error in storng data');
+        }
+        else{
+            res.render('secrets',{});
+        }
+    });
 })
 app.post('/login',(req, res)=>{
     const username=req.body.username;
