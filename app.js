@@ -31,9 +31,11 @@ mongoose.connect('mongodb://localhost:27017/userDB',{useNewUrlParser:true});
 const userSchema=new mongoose.Schema({
     username:String, 
     password:String,
-    googleId:String
+    googleId:String,
+    secret:String
 })
 
+var secret='';
 userSchema.plugin(passportLocalMongoose)
 userSchema.plugin(findOrCreate);
 const user=mongoose.model('User',userSchema);
@@ -88,12 +90,50 @@ app.get('/login',(req, res)=>{
 app.get('/secrets',(req, res)=>{
     if(req.isAuthenticated() )
     {
-        res.render('secrets');
+      user.findById(req.user.id,(err,User)=>{
+        if(err){
+          console.log(err);
+        }
+        else{
+          if(User){ 
+            res.render('secrets',{secret:User.secret});
+          }
+        }
+      })
+        
     }
     else{
         res.redirect('/login')
     }
 })
+
+app.get('/submit',(req, res)=>{
+  if(req.isAuthenticated() )
+  {
+      res.render('submit');
+  }
+  else{
+      res.redirect('/login')
+  }
+})
+
+app.post('/submit',(req, res)=>{
+  console.log(req.user);
+  user.findById(req.user.id,(err,User)=>{
+    if(err){
+      console.log(err);
+    }
+    else{
+      if(User){ 
+        User.secret=req.body.secret;
+        User.save(()=>{
+          res.redirect('/secrets');
+        })
+      }
+    }
+  })
+})
+
 
 app.post('/register',(req, res)=>{
     user.register({username:req.body.username}, req.body.password, function(err, user) {
